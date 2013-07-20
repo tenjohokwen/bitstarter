@@ -22,6 +22,7 @@ References:
 */
 
 var fs = require('fs');
+var rest = require('restler');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
@@ -37,7 +38,11 @@ var assertFileExists = function(infile) {
 };
 
 var cheerioHtmlFile = function(htmlfile) {
-    return cheerio.load(fs.readFileSync(htmlfile));
+     var instr = htmlfile.toString();
+     if(!fs.existsSync(instr)) {
+       return rest.get(apiurl).on('complete', function(){return cheerio.load(fs.readFileSync(htmlfile));});
+     }
+       return cheerio.load(fs.readFileSync(htmlfile));
 };
 
 var loadChecks = function(checksfile) {
@@ -65,8 +70,15 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url <html_file>', 'Path to index.html')
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+    var checkJson;
+    if(program.file){
+     checkJson = checkHtmlFile(program.file, program.checks);
+    }else {
+      checkJson = checkHtmlFile(program.url, program.checks);
+    }
+
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
